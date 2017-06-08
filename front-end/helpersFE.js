@@ -2529,8 +2529,8 @@ string = string + "ID,Row,Column,Area,BaseLandUseType,CarbonMax,CarbonMin,Cattle
         try
         {
         string=string +((obj["1"].area.data[i]== null)? 0:obj["1"].baseLandUseType.data[i])+",";
-        string=string + ((obj["2"].area.data[i]== null)? 0:1)+",";
-        string=string + ((obj["3"].area.data[i]== null)? 0:1)+"," /** landType + landType + landType*/;
+        string=string + ((obj["2"].area.data[i]== null)? 0:obj["2"].baseLandUseType.data[i])+",";
+        string=string + ((obj["3"].area.data[i]== null)? 0:obj["3"].baseLandUseType.data[i])+"," /** landType + landType + landType*/;
        }
        catch(except)
         {
