@@ -2489,7 +2489,7 @@
 
     files = e.target.files;
 
-    if (files[0].name && !files[0].name.match(/\.csv/)) 
+    if (files[0].name && !files[0].name.match(/\.csv/)) //if there is a file name and it's not a csv
     {
       if(files[0].name.match(/\.json/))//. json is file format from pewi2.1
       {
@@ -2520,7 +2520,7 @@
 
 
 
-        for(var i=0; i<828; i++){
+        for(var i=0; i<828; i++){//there are 828 tiles on the board (hidden+visible)
             try{
             //This variable 'string' stores the extracted data from the .json file
                 string = string + obj["1"].id.data[i] + "," + obj["1"].row.data[i] + "," + obj["1"].column.data[i] + ","
@@ -2579,15 +2579,21 @@
           if(year2Available)//If data for years is included, add the year 
           {
           addYearAndTransition();
-          updatePrecip(1);
-          updatePrecip(2);
           }
           if(year3Available)
           {
           addYearAndTransition();
-          updatePrecip(3);
           }
-
+            //updating the precip levels from the values in the uploaded file
+            boardData[currentBoard].precipitation[0]=obj.precipitation[0];
+            boardData[currentBoard].precipitation[1]=obj.precipitation[1];
+            boardData[currentBoard].precipitation[2]=obj.precipitation[2];
+            boardData[currentBoard].precipitation[3]=obj.precipitation[3];
+            document.getElementById("year0Precip").value=(boardData[currentBoard].precipitation[0]==24.58)?0:((boardData[currentBoard].precipitation[0]==28.18)?1:((boardData[currentBoard].precipitation[0]==30.39)?2:((boardData[currentBoard].precipitation[0]==32.16)?3:(boardData[currentBoard].precipitation[0]==34.34)?4:((boardData[currentBoard].precipitation[0]==36.47)?5:6))));
+            document.getElementById("year1Precip").value=(boardData[currentBoard].precipitation[1]==24.58)?0:((boardData[currentBoard].precipitation[1]==28.18)?1:((boardData[currentBoard].precipitation[1]==30.39)?2:((boardData[currentBoard].precipitation[1]==32.16)?3:(boardData[currentBoard].precipitation[1]==34.34)?4:((boardData[currentBoard].precipitation[1]==36.47)?5:6))));
+            document.getElementById("year2Precip").value=(boardData[currentBoard].precipitation[2]==24.58)?0:((boardData[currentBoard].precipitation[2]==28.18)?1:((boardData[currentBoard].precipitation[2]==30.39)?2:((boardData[currentBoard].precipitation[2]==32.16)?3:(boardData[currentBoard].precipitation[2]==34.34)?4:((boardData[currentBoard].precipitation[2]==36.47)?5:6))));
+            document.getElementById("year3Precip").value=(boardData[currentBoard].precipitation[3]==24.58)?0:((boardData[currentBoard].precipitation[3]==28.18)?1:((boardData[currentBoard].precipitation[3]==30.39)?2:((boardData[currentBoard].precipitation[3]==32.16)?3:(boardData[currentBoard].precipitation[3]==34.34)?4:((boardData[currentBoard].precipitation[3]==36.47)?5:6))));
+            transitionToYear(1);
           //clear initData
           initData = [];
 
@@ -2595,7 +2601,7 @@
           }
 
         }
-   else
+   else//if the file isn't csv or json
    {
       alert("Incorrect File Type!");
     }
@@ -2630,10 +2636,11 @@
                   }
             }
             var multipleYearFlag=1;
-            console.log("%s   %s",lines[0][26],lines[0][27]);
+           
           
           for(var i=0;i<lines.length;i++)
             {
+
 
               if((lines[i][26] != lines[i][27]))
               { 
@@ -2655,15 +2662,27 @@
               
               addingYearFromFile=true;
               addYearAndTransition();
-              updatePrecip(2);
+              
             }                        
             if(multipleYearFlag==3)              
             {
               addingYearFromFile=true;
               addYearAndTransition();
               addYearAndTransition();
-              updatePrecip(3);
+             
             }
+            //updating the precip levels from the values in the uploaded file
+            boardData[currentBoard].precipitation[0]=lines[1][28];
+            boardData[currentBoard].precipitation[1]=lines[1][29];
+            boardData[currentBoard].precipitation[2]=lines[1][30];
+            boardData[currentBoard].precipitation[3]=lines[1][31];
+            document.getElementById("year0Precip").value=(boardData[currentBoard].precipitation[0]==24.58)?0:((boardData[currentBoard].precipitation[0]==28.18)?1:((boardData[currentBoard].precipitation[0]==30.39)?2:((boardData[currentBoard].precipitation[0]==32.16)?3:(boardData[currentBoard].precipitation[0]==34.34)?4:((boardData[currentBoard].precipitation[0]==36.47)?5:6))));
+            document.getElementById("year1Precip").value=(boardData[currentBoard].precipitation[1]==24.58)?0:((boardData[currentBoard].precipitation[1]==28.18)?1:((boardData[currentBoard].precipitation[1]==30.39)?2:((boardData[currentBoard].precipitation[1]==32.16)?3:(boardData[currentBoard].precipitation[1]==34.34)?4:((boardData[currentBoard].precipitation[1]==36.47)?5:6))));
+            document.getElementById("year2Precip").value=(boardData[currentBoard].precipitation[2]==24.58)?0:((boardData[currentBoard].precipitation[2]==28.18)?1:((boardData[currentBoard].precipitation[2]==30.39)?2:((boardData[currentBoard].precipitation[2]==32.16)?3:(boardData[currentBoard].precipitation[2]==34.34)?4:((boardData[currentBoard].precipitation[2]==36.47)?5:6))));
+            document.getElementById("year3Precip").value=(boardData[currentBoard].precipitation[3]==24.58)?0:((boardData[currentBoard].precipitation[3]==28.18)?1:((boardData[currentBoard].precipitation[3]==30.39)?2:((boardData[currentBoard].precipitation[3]==32.16)?3:(boardData[currentBoard].precipitation[3]==34.34)?4:((boardData[currentBoard].precipitation[3]==36.47)?5:6))));
+            transitionToYear(1);//transition to year one
+
+            
 
 
 
@@ -3015,7 +3034,7 @@
       //check if the precip shouldn't be changeable
       // if this is the case, then show the precip values, but not in a drop-down selector
       if (multiplayerAssigningModeOn)
-        immutablePrecip = false; //***************************************************trial
+        immutablePrecip = false; 
       if (immutablePrecip) {
         document.getElementById(elementIdString).style.display = "none";
 
