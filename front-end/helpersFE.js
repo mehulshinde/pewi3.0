@@ -1909,7 +1909,7 @@ string = string + "ID,Row,Column,Area,BaseLandUseType,CarbonMax,CarbonMin,Cattle
       catch(except)//catches for a wrong json file type error
       {
         alert("This file format is not compatible");
-        return;
+        
       }
        
         try 
