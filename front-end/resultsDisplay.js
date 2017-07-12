@@ -1,7 +1,7 @@
 /**
  * @Last modified time: 2017-05-31T17:30:44-05:00
  */
-var pdfGenerateModeOn=false;
+var pdfGenerateModeOn = false;
 
 
 //displayResults writes the html for the results iframe with updates results from Totals
@@ -45,37 +45,32 @@ function displayResults() {
 
 } //end displayResults
 
-//onClick function for download button on result 
-function printReportClicked()
-{
+//onClick function for download button on result
+function printReportClicked() {
 
-parent.pdfGenerateModeOn=true;
-var canvas=document.getElementById('canvas');
-canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);//clearing the canvas
-console.log("download clicked");
-var xCord=10, yCord=10;
-var mode=true;
-// Setting up a white background for the canvas
-var imgData1=canvas.getContext("2d").getImageData(0,0,canvas.width,canvas.height);
-var data=imgData1.data;
-for(var i=0;i<data.length;i+=4)
-{
-    if(data[i+3]<255)
-    {
-    data[i] = 255 - data[i];
-    data[i+1] = 255 - data[i+1];
-    data[i+2] = 255 - data[i+2];
-    data[i+3] = 255 - data[i+3];
+  parent.pdfGenerateModeOn = true;
+  var canvas = document.getElementById('canvas');
+  canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height); //clearing the canvas
+  console.log("download clicked");
+  var xCord = 10,
+    yCord = 10;
+  var mode = true;
+  // Setting up a white background for the canvas
+  var imgData1 = canvas.getContext("2d").getImageData(0, 0, canvas.width, canvas.height);
+  var data = imgData1.data;
+  for (var i = 0; i < data.length; i += 4) {
+    if (data[i + 3] < 255) {
+      data[i] = 255 - data[i];
+      data[i + 1] = 255 - data[i + 1];
+      data[i + 2] = 255 - data[i + 2];
+      data[i + 3] = 255 - data[i + 3];
     }
-}
-canvas.getContext("2d").putImageData(imgData1,0,0);
-document.body.appendChild(canvas);
-// Adding the pie charts to the canvas
-for(var j=0; j<2; j++)
-{
-
-  for(var i=1; i<=parent.boardData[parent.currentBoard].calculatedToYear; i++)
-  {
+  }
+  canvas.getContext("2d").putImageData(imgData1, 0, 0);
+  document.body.appendChild(canvas);
+  // Adding the pie charts to the canvas
+  for(var j=0; j<2; j++){
+  for(var i=1; i<=parent.boardData[parent.currentBoard].calculatedToYear; i++){
   parent.drawD3LandPieChart(i, mode);
   var svg;
   var svgId="pieSVG";
@@ -85,61 +80,65 @@ for(var j=0; j<2; j++)
   var canvasLU='canvasLU'+1;
   canvg(document.getElementById('canvasLU1'), svgStringData);
   console.log("drawing image no. %s",i);
-  canvas.getContext('2d').drawImage(document.getElementById('canvasLU1'),xCord,yCord,230,230);
-  xCord+=230;
+  canvas.getContext('2d').drawImage(document.getElementById('canvasLU1'),xCord,yCord,190,190);
+
+canvas.getContext('2d').font = "18px Arial";
+canvas.getContext('2d').fillText("Categories",xCord+48,105);
+canvas.getContext('2d').fillText("Year " + i,xCord+70,120);
+
+canvas.getContext('2d').fillText("Lists",xCord+73,300);
+canvas.getContext('2d').fillText("Year "+ i,xCord+67,315);
+
+  xCord+=200;
   }
   xCord=10;
-  yCord+=240;
+  yCord+=200;
   mode=false;
 }
-xCord=10;
-yCord+=20;
-// Draw the radar Chart for ecosystem services
-var $container = $('#radarChart');
-var content = $container.html().trim();
-var radarSvg = document.getElementById('radarChart');
-console.log("inner html: %s",content);
- var svgEnd=content.indexOf('</g></svg>');
- content=content.substring(0,svgEnd+10);
- console.log("sub string: %s",content);
-canvg(document.getElementById('canvasLU2'), content);
-canvas.getContext('2d').drawImage(document.getElementById('canvasLU2'), xCord,yCord,600,600);
-yCord+=600;
-//writing th ecanvas on pdf
-var imgData = canvas.toDataURL("image/jpeg", 1.0);
-var pdf = new jsPDF();
-pdf.addImage(imgData, 'JPEG', 0, 0);
-pdf.addPage();
-canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);//clearing the canvas
-imgData1=canvas.getContext("2d").getImageData(0,0,canvas.width,canvas.height);
-data=imgData1.data;
-for(var i=0;i<data.length;i+=4)
-{
-    if(data[i+3]<255)
-    {
-    data[i] = 255 - data[i];
-    data[i+1] = 255 - data[i+1];
-    data[i+2] = 255 - data[i+2];
-    data[i+3] = 255 - data[i+3];
+  xCord = 10;
+  yCord += 20;
+  // Draw the radar Chart for ecosystem services
+  var $container = $('#radarChart');
+  var content = $container.html().trim();
+  var radarSvg = document.getElementById('radarChart');
+  var svgEnd = content.indexOf('</g></svg>');
+  content = content.substring(0, svgEnd + 10);
+  canvg(document.getElementById('canvasLU2'), content);
+  canvas.getContext('2d').drawImage(document.getElementById('canvasLU2'), xCord, yCord, 600, 600);
+  yCord += 600;
+  //writing th ecanvas on pdf
+  var imgData = canvas.toDataURL("image/jpeg", 1.0);
+  var pdf = new jsPDF();
+  pdf.addImage(imgData, 'JPEG', 0, 0);
+  pdf.addPage();
+  canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height); //clearing the canvas
+  imgData1 = canvas.getContext("2d").getImageData(0, 0, canvas.width, canvas.height);
+  data = imgData1.data;
+  for (var i = 0; i < data.length; i += 4) {
+    if (data[i + 3] < 255) {
+      data[i] = 255 - data[i];
+      data[i + 1] = 255 - data[i + 1];
+      data[i + 2] = 255 - data[i + 2];
+      data[i + 3] = 255 - data[i + 3];
     }
-}
-canvas.getContext("2d").putImageData(imgData1,0,0);
-document.body.appendChild(canvas);
-//Draw the precip chart
-var precipSvg= document.getElementById('precipChart');
-var precipSvgStringData=$(precipSvg).html();
-precipSvgStringData="<svg>"+precipSvgStringData+"</svg>";
-canvg(document.getElementById('canvasLU3'), precipSvgStringData);
-canvas.getContext('2d').drawImage(document.getElementById('canvasLU3'),10,10,600,600);
-//writing the precip chart on pdf
+  }
+  canvas.getContext("2d").putImageData(imgData1, 0, 0);
+  document.body.appendChild(canvas);
+  //Draw the precip chart
+  var precipSvg = document.getElementById('precipChart');
+  var precipSvgStringData = $(precipSvg).html();
+  precipSvgStringData = "<svg>" + precipSvgStringData + "</svg>";
+  canvg(document.getElementById('canvasLU3'), precipSvgStringData);
+  canvas.getContext('2d').drawImage(document.getElementById('canvasLU3'), 10, 10, 600, 600);
+  //writing the precip chart on pdf
 
 
-imgData = canvas.toDataURL("image/jpeg", 1.0);
-pdf.addImage(imgData, 'JPEG', 0, 0);
-//Saving the pdf
-pdf.save("pewiPrintableReport.pdf");
-parent.pdfGenerateModeOn=true;
-canvas.style="display: none";
+  imgData = canvas.toDataURL("image/jpeg", 1.0);
+  pdf.addImage(imgData, 'JPEG', 0, 0);
+  //Saving the pdf
+  pdf.save("pewiPrintableReport.pdf");
+  parent.pdfGenerateModeOn = true;
+  canvas.style = "display: none;";
 
 
 
@@ -364,8 +363,8 @@ function generateResultsTable() {
 
       var tempString = backendDataIdentifiers[l];
       //Correction for Carbon Sequestrations
-      if(l==2) {
-        Totals[tempString][y] = Totals[tempString][y]*(1/conversionArray[l]);
+      if (l == 2) {
+        Totals[tempString][y] = Totals[tempString][y] * (1 / conversionArray[l]);
       }
       htmlTableString += (Math.round(Totals[tempString][y] * 10) / 10) + "<br>";
 
@@ -697,12 +696,12 @@ function drawD3LandPieChart(year, isTheChartInCategoryMode) {
   // var radius = Math.min(width, height) / 2;
   var w = Math.round(window.innerWidth * 0.38);
   var h = Math.round(window.innerHeight * 0.382);
-  if(pdfGenerateModeOn)//if the pie chart is being drawn to be prionted on a pdf
+  if (pdfGenerateModeOn) //if the pie chart is being drawn to be prionted on a pdf
   {
-  w = 300;
-  h = 300;  
+    w = 300;
+    h = 300;
   }
-  console.log("Drawing the pie whart with w and h %s and %s in %s",w,h,pdfGenerateModeOn);
+  console.log("Drawing the pie whart with w and h %s and %s in %s", w, h, pdfGenerateModeOn);
   var pieChart_length = Math.min(w, h);
   var legendW = Math.round(pieChart_length * 1.06);
 
@@ -719,10 +718,10 @@ function drawD3LandPieChart(year, isTheChartInCategoryMode) {
   var chart = document.getElementById('resultsFrame').contentWindow.document.getElementById('landusePieChart');
 
   //d3 stuff here, I won't comment this section too heavily as it is mostly typical graphics
-    var svg = d3.select(chart)
+  var svg = d3.select(chart)
     .append('svg')
     .attr("class", "graph-svg-component")
-    .attr("id","pieSVG")
+    .attr("id", "pieSVG")
     // .attr('width', width + legendW) //leave room for legend so add 280
     // .attr('height', height)
     .attr('width', pieChart_length + legendW) //leave room for legend so add 280
