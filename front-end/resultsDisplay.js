@@ -45,14 +45,12 @@ function displayResults() {
 
 } //end displayResults
 
-//onClick function for download button on result 
+//onClick function for download button on result
 function printReportClicked(){
-  
+
 parent.pdfGenerateModeOn=true;
 var canvas=document.getElementById('canvas');
 canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
-console.log("download clicked");
-   
 var xCord=10, yCord=30;
 var mode=true;
 // Setting up a white background for the canvas
@@ -81,17 +79,16 @@ for(var j=0; j<2; j++){
   svgStringData="<svg>"+svgStringData+"</svg>";
   var canvasLU='canvasLU'+1;
   canvg(document.getElementById('canvasLU1'), svgStringData);
-  console.log("drawing image no. %s",i);
   canvas.getContext('2d').drawImage(document.getElementById('canvasLU1'),xCord,yCord,190,190);
 
-  
+
 canvas.getContext('2d').font = "18px Arial";
 canvas.getContext('2d').fillText("Categories",xCord+48,125);
 canvas.getContext('2d').fillText("Year " + i,xCord+70,144);
-    
+
 canvas.getContext('2d').fillText("Lists",xCord+73,320);
 canvas.getContext('2d').fillText("Year "+ i,xCord+67,339);
-      
+
 
   xCord+=200;
   }
@@ -116,21 +113,7 @@ canvas.getContext('2d').fillText("Year "+ i,xCord+67,339);
   var imgData = canvas.toDataURL("image/jpeg", 1.0);
   var pdf = new jsPDF();
   pdf.addImage(imgData, 'JPEG', 0, 0);
-//  pdf.addPage();
-//  canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height); //clearing the canvas
-//  imgData1 = canvas.getContext("2d").getImageData(0, 0, canvas.width, canvas.height);
-//  img_data = imgData1.data;
-//  for (var i = 0; i < img_data.length; i += 4) {
-//    if (img_data[i + 3] < 255) {
-//      img_data[i] = 255 - img_data[i];
-//      img_data[i + 1] = 255 - img_data[i + 1];
-//      img_data[i + 2] = 255 - img_data[i + 2];
-//      img_data[i + 3] = 255 - img_data[i + 3];
-//    }
-//  }
-//  canvas.getContext("2d").putImageData(imgData1, 0, 0);
-//  document.body.appendChild(canvas);
-//  
+  parent.drawPrecipitationInformationChart();
 //Draw the precip chart
   var precipSvg = document.getElementById('precipChart');
   var precipSvgStringData = $(precipSvg).html();
@@ -142,18 +125,18 @@ canvas.getContext('2d').fillText("Year "+ i,xCord+67,339);
   canvas.getContext('2d').font = "20px Arial";
   canvas.getContext('2d').fillText("Precipitiation",30,900);
   canvas.getContext('2d').fillText("Ecosystem Services ",30,465);
-    
-  var k = 936;    
+
+  var k = 936;
   for (var i = 0; i<4 ;i++){
   canvas.getContext('2d').font = "18px Arial";
   canvas.getContext('2d').fillText(parent.boardData[parent.currentBoard].precipitation[i]+" inches "+parent.data[i].adj,30,k);
   k = k +32;
   }
 
-    
 
 
-    
+
+
   //writing the precip chart on pdf
 
 
@@ -161,7 +144,7 @@ canvas.getContext('2d').fillText("Year "+ i,xCord+67,339);
   pdf.addImage(imgData, 'JPEG', 0, 0);
   //Saving the pdf
   pdf.save("pewiPrintableReport.pdf");
-  parent.pdfGenerateModeOn = true;
+  parent.pdfGenerateModeOn = false;
   canvas.style = "display: none;";
 
 
@@ -723,8 +706,7 @@ function drawD3LandPieChart(year, isTheChartInCategoryMode) {
     w = 300;
     h = 300;
   }
-  console.log("Drawing the pie whart with w and h %s and %s in %s", w, h, pdfGenerateModeOn);
-  var pieChart_length = Math.min(w, h);
+    var pieChart_length = Math.min(w, h);
   var legendW = Math.round(pieChart_length * 1.06);
 
   var radius = pieChart_length / 2;
@@ -1063,8 +1045,12 @@ function drawPrecipitationInformationChart() {
   // var barHeight = 30;
   var width = Math.round(window.innerWidth * 0.3);
   var barHeight = Math.round(window.innerHeight * 0.045);
-
-
+  if(pdfGenerateModeOn)
+  {
+    width=700;
+    barHeight=42;
+  }
+  console.log("width : %s, height %s",width, barHeight);
   //create bar scale for percentages
   var x = d3.scaleLinear()
     .domain([0, 100])
