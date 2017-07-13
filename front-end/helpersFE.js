@@ -23,13 +23,10 @@ var currentHighlightType = 0;
 var currentHighlightTypeString = null;
 var immutablePrecip = false;
 var clickAndDrag = false;
-var previousTileId = [];
-var previousPainter = [];
-var lastPainter = null;
-var lastSelectedPainter = 1;
-var paintSwitch = false;
+var undoArr = [[],[],[],[]];
+var undoGridArr = [];
+var undoGridPainters = [];
 var undo = false;
-var previous = false;
 var previousTab = null;
 var overlayedToggled = false;
 var inResults = false;
@@ -44,7 +41,7 @@ var randomzing = false;
 var previousOverlay = null;
 var previousTab = null;
 var overlayedToggled = false;
-var addingYearFromFile=false;//Boolean used to keep a track of whether or not you're adding a year from file 
+var addingYearFromFile=false;//Boolean used to keep a track of whether or not you're adding a year from file
 
 
 var inResults = false;
@@ -78,6 +75,7 @@ var playerCombo = [];
 var totalPlayers = 0;
 var merging = false;
 var resetting = false;
+var hotkeyArr = [[69,null],[82,null],[84,null],[85,null],[66,null],[86,null],[68,null],[65,null],[87,null],[83,null],[79,null],[81,null]];
 
 //Used for preventing users from exiting (click-tracking mode)
 window.onbeforeunload = confirmExit;
@@ -166,11 +164,32 @@ function highlightTile(tileId) {
       previousHover = tileId;
 
       //update HUD with current information
+      //Bottom part of screen
       showInfo("Year: " + currentYear + "&#160;&#160;&#160;Precipitation: " + printPrecipYearType() + "&#160;&#160;&#160;Current Selection: " + printLandUseType(painter) + "&#160;&#160;&#160;" + printLandUseType(boardData[currentBoard].map[tileId].landType[currentYear]));
 
       //update the information displayed in the delayed hover div by cursor
-      myTimer = setTimeout(function() {
-        document.getElementById("hover-info").innerHTML = "(" + boardData[currentBoard].map[tileId].row + "," + boardData[currentBoard].map[tileId].column + ")" + "<br>" + getHighlightedInfo(tileId);
+      myTimer = setTimeout(function()
+      {
+        document.getElementById("hover-info").innerHTML = "(" + boardData[currentBoard].map[tileId].row + "," + boardData[currentBoard].map[tileId].column + ")" + "<br>" + getHighlightedInfo(tileId) + "\n" + "Land Cover: " + printLandUseType(boardData[currentBoard].map[tileId].landType[currentYear]) + "<br>" + "Precipitation: " + printPrecipYearType() + "<br>" + "Soil Type: " + printSoilType(tileId);
+      //May use strings and iterate through them for removing hover information
+      var info1 = "Land Cover: " + printLandUseType(boardData[currentBoard].map[tileId].landType[currentYear]) ;
+      var info2 = "Precipitation: " + printPrecipYearType();
+      var info3 = "Soil Type: " + printSoilType(tileId);
+          if(document.getElementById('parameters').innerHTML.includes('hover1'))
+          {
+            document.getElementById("hover-info").innerHTML = document.getElementById("hover-info").innerHTML.replace(info1 + "<br>", '');
+            //document.getElementById("hover-info").innerHTML = "(" + boardData[currentBoard].map[tileId].row + "," + boardData[currentBoard].map[tileId].column + ")" + "<br>" + getHighlightedInfo(tileId)  + "Precipitation: " + printPrecipYearType() + "<br>" + "Soil Type: " + printSoilType(tileId);
+          }
+          if(document.getElementById('parameters').innerHTML.includes('hover2'))
+          {
+            document.getElementById("hover-info").innerHTML = document.getElementById("hover-info").innerHTML.replace(info2 + "<br>", '');
+            //document.getElementById("hover-info").innerHTML = "(" + boardData[currentBoard].map[tileId].row + "," + boardData[currentBoard].map[tileId].column + ")" + "<br>" + getHighlightedInfo(tileId)  + "Precipitation: " + printPrecipYearType() + "<br>" + "Soil Type: " + printSoilType(tileId);
+          }
+          if(document.getElementById('parameters').innerHTML.includes('hover3'))
+          {
+            document.getElementById("hover-info").innerHTML = document.getElementById("hover-info").innerHTML.replace(info3, '');
+            //document.getElementById("hover-info").innerHTML = "(" + boardData[currentBoard].map[tileId].row + "," + boardData[currentBoard].map[tileId].column + ")" + "<br>" + getHighlightedInfo(tileId)  + "Precipitation: " + printPrecipYearType() + "<br>" + "Soil Type: " + printSoilType(tileId);
+          }
       }, 500);
     }
 
@@ -187,40 +206,12 @@ function highlightTile(tileId) {
 
 //changeLandTypeTile changes the landType of a selected tile
 function changeLandTypeTile(tileId) {
-
-  //determines whether or not the given tile should be added to the tile history (for undo function)
-  if (previousTileId.length > 0) {
-    if (!previousTileId.includes(tileId)) {
-      previous = false;
-    }
-  } else {
-    previous = false;
-  }
-  //set tiles to change as the previous tile in that position (undo function).
-  if (previousTileId[previousTileId.length - 1] == tileId && undo == true) {
-    lastPainter = boardData[currentBoard].map[tileId].landType[currentYear];
-    painter = previousPainter[previousPainter.length - 1];
-    previousTileId.splice(previousTileId.length - 1, 1);
-    previousPainter.splice(previousPainter.length - 1, 1);
-    undo = false;
-    paintSwitch = false;
-  }
-  //store previous tile data only if it's not a previously-listed tile in the array
-  else if (previous == false) {
-    //save previous tile information
-    previousTileId = previousTileId.concat(tileId);
-    previousPainter = previousPainter.concat(boardData[currentBoard].map[tileId].landType[currentYear]);
-    previous = true;
-    //since the undo function assumes the paint switched to another type (even when the user didn't), the painter will
-    // will equal the actual selected painter after the undo function is performed.
-    if (lastPainter != null && !paintSwitch) {
-      painter = lastSelectedPainter;
-      lastPainter = null;
-    }
+  //Add tile to the undoArr
+  if(!undo) {
+    addChange(tileId);
   }
   //if land type of tile is nonzero
   if (boardData[currentBoard].map[tileId].landType[currentYear] != 0) {
-
     //change the materials of the faces in the meshMaterials array and update the boardData
     if (!multiplayerAssigningModeOn) {
       meshMaterials[tileId].map = textureArray[painter];
@@ -236,6 +227,58 @@ function changeLandTypeTile(tileId) {
   }
 
 } //end changeLandTypeTile
+
+//Clumps and undo's multiple tiles
+function undoGrid(givenTilesAndPainter) {
+  //Go through each tile and replace the paint with the paint previously there
+  while(givenTilesAndPainter[1].length > 0) {
+    painter = givenTilesAndPainter[1].pop();
+    changeLandTypeTile(givenTilesAndPainter[0].pop());
+  }
+} //end givenTilesAndPainter
+
+//Adds the given tileId and painter to the undoArr
+function addChange(tileId) {
+  if(uniqueTileChange(tileId)) {
+    //Paint selector is a grid
+    if(painterTool.status == 2) {
+      undoGridArr.push(tileId);
+    //Paint selector is regular
+    } else {
+      undoArr[currentYear].push([tileId,boardData[currentBoard].map[tileId].landType[currentYear]]);
+    }
+  }
+} //end addChange(gridBoolean,tileId)
+
+//Inserts the land type changes from a grid into the undoArr
+function insertChange() {
+  undoArr[currentYear].push([undoGridArr,undoGridPainters]);
+  undoGridArr = [];
+  undoGridPainters = [];
+} //end insertChange()
+
+//Determines if the tile to be added is unique (non-repeated in paint and tileId)
+function uniqueTileChange(tileId) {
+    //If there are no tiles yet, it is unique
+    if(undoArr[currentYear].length == 0) {
+      return true;
+    }
+    //Retrieves the last item in the array without deleting it
+    var tempTileAndPainter = undoArr[currentYear].slice(-1).pop();
+    //If the previously added tileId/Paint combo was the same tile and the same paint, it's not a unique change.
+    if(tileId == tempTileAndPainter[0] && boardData[currentBoard].map[tileId].landType[currentYear] == painter) {
+      return false;
+    } else {
+      return true;
+    }
+} //end uniqueTileChange(tileId)
+
+//Resets the undo function arrays
+function resetUndo() {
+  undoArr = [[],[],[],[]];
+  undoGridArr = [];
+  undoGridPainters = [];
+} //end resetUndo()
 
 //getTileID calculates the id of the tile give the raycaster intersection coordinates
 function getTileID(x, y) {
@@ -544,10 +587,21 @@ function revertChanges() {
   if (curTracking) {
     pushClick(0, getStamp(), 30, 0, null);
   }
-  if (previousTileId.length > 0 && !inResults && !inDispLevels) {
+  //Only undo if there is a tile to undo (or you are free to do so)
+  if (undoArr[currentYear].length > 0 && !inResults && !inDispLevels) {
+    var tempPainter = painter;
     undo = true;
-    changeLandTypeTile(previousTileId[previousTileId.length - 1]);
+    var tempTileAndPainter = undoArr[currentYear].pop();
+    //If the undo function is undoing a grid
+    if(Array.isArray(tempTileAndPainter[0])) {
+      undoGrid(tempTileAndPainter);
+    //If the undo function is undoing a normal selection
+    } else {
+      painter = tempTileAndPainter[1];
+      changeLandTypeTile(tempTileAndPainter[0]);
+    }
     undo = false;
+    painter = tempPainter;
   }
 }
 
@@ -693,11 +747,6 @@ function onDocumentMouseMove(event) {
     //if painter tool type is the clickAndDrag painter
     else if (clickAndDrag) {
       var currentTile = getTileID(intersects[0].point.x, -intersects[0].point.z);
-      if (currentTile == previousTileId[previousTileId.length - 1] && previousPainter.length > 0) {
-        previous = true;
-      } else {
-        previous = false;
-      }
       if (boardData[currentBoard].map[currentTile].landType[0] != 0) changeLandTypeTile(currentTile);
     } else {
       //just a normal highlighting
@@ -751,13 +800,14 @@ function onDocumentMouseDown(event) {
                 var changedTiles = getGrid(painterTool.startTile, painterTool.endTile);
 
                 for (var i = 0; i < changedTiles.length; i++) {
-                  previous = false;
                   if (curTracking) {
                     pushClick(0, getStamp(), 56, 0, changedTiles[i]);
                   }
+                  undoGridPainters.push(boardData[currentBoard].map[changedTiles[i] - 1].landType[currentYear]);
                   changeLandTypeTile(changedTiles[i] - 1);
                 }
-
+                //Inserts the block of land use types into the undoArr
+                insertChange();
                 //reset highlighting, computationally intensive
                 //  but a working solution
                 refreshBoard();
@@ -836,7 +886,10 @@ function onDocumentKeyDown(event) {
       break;
 
       //case t - toggle topography
-    case 84:
+    case hotkeyArr[2][0]: case hotkeyArr[2][1]:
+    //setting the camera y position to a specific hight when toggle is pressed.
+    if (camera2.position.y < 27)
+        camera2.position.y = 27;
       if (modalUp !== true) {
         if (curTracking) {
           pushClick(0, getStamp(), 32, 0, null);
@@ -854,21 +907,33 @@ function onDocumentKeyDown(event) {
         setupRiver();
       }
       break;
-
       //case e - reset camera position
-    case 69:
+    case hotkeyArr[0][0]: case hotkeyArr[0][1]:
       //update scope across 10 turns,
       // it seeems that controls.js scope doesn't bring us all the way back
       // with just a controls value of 1
-      controls.value = 10;
-      controls.reset();
-      setTimeout(function() {
-        controls.value = 1;
+    //Reseting camera postion to specific views depending on which camera is on use now.
+    controls.value = 10;
+    controls.reset();
+    setTimeout(function() {
+    controls.value = 1;
       }, 100);
+    if(ToggleCam == 2){
+      controls1.value = 10;
+      controls1.reset();
+      setTimeout(function() {
+        controls1.value = 1;
+      }, 100);
+    }else{
+        camera2.position.x = 70;
+        camera2.position.y = 25;
+        camera2.position.z = 244;
+        camera2.rotation.y = 0;
+    }
       break;
 
       //case r - randomize land types
-    case 82:
+    case hotkeyArr[1][0]: case hotkeyArr[1][1]:
       if (modalUp !== true && currentHighlightType < 4) {
         if (curTracking) {
           pushClick(0, getStamp(), 52, 0, null);
@@ -903,7 +968,7 @@ function onDocumentKeyDown(event) {
       break;
 
       //case v - key to record multiplayer fields
-    case 86:
+    case hotkeyArr[5][0]: case hotkeyArr[5][1]:
       if (multiplayerAssigningModeOn) {
         endMultiplayerAssignMode();
       }
@@ -928,18 +993,12 @@ function onDocumentKeyDown(event) {
       }
       break;
       // case u - undo key
-    case 85:
-
-      if (!inResults && !inDispLevels && !overlayedToggled)
-
-      {
+    case hotkeyArr[3][0]: case hotkeyArr[3][1]:
         revertChanges();
-      }
-      undo = false;
       break;
 
       // case o - toggleOverlay
-    case 79:
+    case hotkeyArr[10][0]: case hotkeyArr[10][1]:
       if (previousOverlay != null) {
         if (curTracking) {
           pushClick(0, getStamp(), 31, 0, null);
@@ -949,7 +1008,7 @@ function onDocumentKeyDown(event) {
       break;
 
       // key b - clickTrackings
-    case 66:
+    case hotkeyArr[4][0]: case hotkeyArr[4][1]:
       if (!curTracking) {
         curTracking = true;
         //Starting date is recorded
@@ -1022,10 +1081,6 @@ function toggleEscapeFrame() {
 
 //paintChange changes the highlighted color of the selected painter and updates painter
 function changeSelectedPaintTo(newPaintValue) {
-  //paint color has been switched
-  paintSwitch = true;
-  painter = lastSelectedPainter;
-  lastSelectedPainter = newPaintValue;
   //check to see if multiplayer Assignment Mode is On
   if (!multiplayerAssigningModeOn) {
     //Store paint change if click-tracking is on
@@ -2222,48 +2277,49 @@ function getHighlightColor(highlightType, tileId) {
 } //end getHighlightColor
 
 //getHighlightedInfo returns the value of the corresponding highlighted setting in a tile
+//More hover information
 function getHighlightedInfo(tileId) {
 
   //return information about the tile that is highlighted
   if (currentHighlightType <= 0) {
     return "";
-  } else {
+  }
+  else {
 
     var highlightString = "";
-
     switch (currentHighlightType) {
       //create string for nitrate levels
       case 1:
-        highlightString = (Totals.nitrateContribution[currentYear][tileId] * 100).toFixed(2) + "%";
+        highlightString = (Totals.nitrateContribution[currentYear][tileId] * 100).toFixed(2) + "%" + "<br>";
         break;
         //create string for gross erosion levels
       case 2:
-        highlightString = Number(boardData[currentBoard].map[tileId].results[currentYear].calculatedGrossErosionRate).toFixed(2) + " t/ac/yr";
+        highlightString = Number(boardData[currentBoard].map[tileId].results[currentYear].calculatedGrossErosionRate).toFixed(2) + " t/ac/yr" + "<br>";
         break;
         //create string for phosphorus load levels
       case 3:
-        highlightString = (boardData[currentBoard].map[tileId].results[currentYear].phosphorusDelivered / boardData[currentBoard].map[tileId].area).toFixed(2) + " lb/ac/yr";
+        highlightString = (boardData[currentBoard].map[tileId].results[currentYear].phosphorusDelivered / boardData[currentBoard].map[tileId].area).toFixed(2) + " lb/ac/yr" + "<br>";
         break;
         //create string for flood frequency levels
       case 4:
         switch (Number(boardData[currentBoard].map[tileId].floodFrequency)) {
           case 0:
-            highlightString = "None";
+            highlightString = "None" + "<br>";
             break;
           case 10:
-            highlightString = "None";
+            highlightString = "None" + "<br>";
             break;
           case 20:
-            highlightString = "Rare";
+            highlightString = "Rare" + "<br>";
             break;
           case 30:
-            highlightString = "Occasionally";
+            highlightString = "Occasionally" + "<br>";
             break;
           case 40:
-            highlightString = "Frequently";
+            highlightString = "Frequently" + "<br>";
             break;
           case 50:
-            highlightString = "Ponded";
+            highlightString = "Ponded" + "<br>";
             break;
         }
         break;
@@ -2272,81 +2328,217 @@ function getHighlightedInfo(tileId) {
         var drainage = Number(boardData[currentBoard].map[tileId].drainageClass);
         switch (drainage) {
           case 70:
-            highlightString = "Very Poor";
+            highlightString = "Very Poor" + "<br>";
             break;
           case 60:
-            highlightString = "Poor";
+            highlightString = "Poor" + "<br>";
             break;
           case 50:
-            highlightString = "Somewhat Poor";
+            highlightString = "Somewhat Poor" + "<br>";
             break;
           case 45:
-            highlightString = "Somewhat Poor";
+            highlightString = "Somewhat Poor" + "<br>";
             break;
           case 40:
-            highlightString = "Moderate / Well";
+            highlightString = "Moderate / Well" + "<br>";
             break;
           case 30:
-            highlightString = "Moderate / Well";
+            highlightString = "Moderate / Well" + "<br>";
             break;
           case 10:
-            highlightString = "Excessive";
+            highlightString = "Excessive" + "<br>";
             break;
           case 0:
-            highlightString = "Excessive";
+            highlightString = "Excessive" + "<br>";
             break;
         } //end switch
         break;
         //create string for strategic wetlands
       case 6:
         if (boardData[currentBoard].map[tileId].strategicWetland == 1) {
-          highlightString = "Strategic wetland";
+          highlightString = "Strategic Wetland" + "<br>";
+        }
+        else{
+          highlightString = "Non-Strategic Wetland" + "<br>";
         }
         break;
         //create string for subwatershed number
       case 7:
-        highlightString = "Subwatershed " + boardData[currentBoard].map[tileId].subwatershed;
+        highlightString = "Subwatershed " + boardData[currentBoard].map[tileId].subwatershed + "<br>";
         break;
-        //create string for soil class
-      case 8:
-        soil = boardData[currentBoard].map[tileId].soilType;
-        switch (soil) {
-          case "A":
-            return "Clarion 138B";
-          case "B":
-            return "Buckney 1636";
-          case "C":
-            return "Canisteo 507";
-          case "D":
-            return "Downs 162D2";
-          case "G":
-            return "Gara-Armstrong 993E2";
-          case "K":
-            return "Ackmore-Colo 5B";
-          case "L":
-            return "Coland 135";
-          case "M":
-            return "Tama 120C2";
-          case "N":
-            return "Nicollet 55";
-          case "O":
-            return "Okoboji 90";
-          case "Q":
-            return "Tama 120B";
-          case "T":
-            return "Muscatine 119";
-          case "Y":
-            return "Noadaway 220";
-        }
-
+      /*case 8:
+        var soil = boardData[currentBoard].map[tileId].soilType;
+        switch(soil)
+          {
+            case "A":
+              highlightString = "13.2-13.9 Mg/hr/yr" + "<br>";
+              break;
+            case "B":
+              highlightString = "0 Mg/hr/yr" + "<br>";
+              break;
+            case "C":
+                highlightString = "13.9-15.1 Mg/hr/yr" + "<br>";
+                break;
+            case "D":
+              highlightString = "11.2-13.2 Mg/hr/yr" + "<br>";
+              break;
+            case "G":
+              highlightString = "0 Mg/hr/yr" + "<br>";
+              break;
+            case "K":
+              highlightString = "11.2-13.2 Mg/hr/yr" + "<br>";
+              break;
+            case "L":
+              highlightString = "13.9-15.1 Mg/hr/yr" + "<br>";
+              break;
+            case "M":
+            highlightString = "13.2-13.9 Mg/hr/yr" + "<br>";
+            break;
+            case "N":
+            highlightString = "13.2-13.9 Mg/hr/yr" + "<br>";
+            break;
+            case "O":
+            highlightString = "11.2-13.2 Mg/hr/yr" + "<br>";
+            break;
+            case "Q":
+              highlightString = "13.2-13.9 Mg/hr/yr" + "<br>";
+              break;
+            case "T":
+              highlightString = "13.2-13.9 Mg/hr/yr" + "<br>";
+              break;
+            case "Y":
+              highlightString = "11.2-13.2 Mg/hr/yr" + "<br>";
+             break;
+          }*/
+    //Raw numbers are for conversion of the units (conversion doesn't exist in the back end)
+    //create string for corn grain yield
+    case 9:
+      highlightString = Number(boardData[currentBoard].map[tileId].getCornGrainYield()/15.92857142857).toFixed(1) + " Mg/ha/yr" + "<br>";
+      break;
+    //create string for soybean yield
+    case 10:
+      highlightString = Number(boardData[currentBoard].map[tileId].getSoybeanYield()/14.87414187643).toFixed(2) + " Mg/ha/yr" + "<br>";
+      break;
+    //create string for  mixed fruit and vegetable yield
+    case 11:
+      highlightString = Number(boardData[currentBoard].map[tileId].getMixedFruitsVegetablesYield()/0.060801144492).toFixed(2) + " Mg/ha/yr" + "<br>";
+      break;
+    //create string for cattle yield
+    case 12:
+      highlightString = Number(boardData[currentBoard].map[tileId].getCattleSupported(-1)).toFixed(1) + " animals/acre/yr" + "<br>";
+      break;
+    //create string for alfalfa yield
+    case 13:
+      highlightString = Number(boardData[currentBoard].map[tileId].getHayYield()/0.446808510638).toFixed(1) + " Mg/ha/yr" + "<br>";
+      break;
+     //create string for grass hay yield (same as alfalfa)
+    case 14:
+      highlightString = Number(boardData[currentBoard].map[tileId].getHayYield()/0.446808510638).toFixed(1) + " Mg/ha/yr" + "<br>";
+      break;
+    //create string for switchgrass yield
+    case 15:
+      highlightString = Number(boardData[currentBoard].map[tileId].getSwitchgrassYield()/0.445407279029).toFixed(2) + " Mg/ha/yr" + "<br>";
+      break;
+    //create string for wood yield
+    case 16:
+      highlightString = Number(boardData[currentBoard].map[tileId].getWoodYield()/171.875).toFixed(2) + " m3/ha/yr" + "<br>";
+      break;
+    //create string for short-rotation woody biomass yield
+    case 17:
+      highlightString = "608.6 tons/acre/yr" + "<br>";
+      break;
     }
-
     return highlightString;
   }
 
 
 } //end getHighlightedInfo
 
+function printSoilType(tileId){
+var soil = boardData[currentBoard].map[tileId].soilType;
+switch (soil)
+{
+  case "A":
+    highlightString = "Clarion 138B" + "<br>";
+    break;
+  case "B":
+    highlightString = "Buckney 1636" + "<br>";
+    break;
+  case "C":
+    highlightString = "Canisteo 507" + "<br>";
+    break;
+  case "D":
+    highlightString = "Downs 162D2" + "<br>";
+    break;
+  case "G":
+    highlightString = "Gara-Armstrong 993E2" + "<br>";
+    break;
+  case "K":
+    highlightString = "Ackmore-Colo 5B" + "<br>";
+    break;
+  case "L":
+    highlightString = "Coland 135" + "<br>";
+    break;
+  case "M":
+    highlightString = "Tama 120C2" + "<br>";
+    break;
+  case "N":
+    highlightString = "Nicollet 55" + "<br>";
+    break;
+  case "O":
+    highlightString = "Okoboji 90" + "<br>";
+    break;
+  case "Q":
+    highlightString = "Tama 120B" + "<br>";
+    break;
+  case "T":
+    highlightString = "Muscatine 119" + "<br>";
+    break;
+  case "Y":
+    highlightString = "Noadaway 220" + "<br>";
+    break;
+  }
+  if(document.getElementById('parameters').innerHTML.includes('hover4') && currentHighlightType!=0)
+  {
+    document.getElementById("hover-info").innerHTML = document.getElementById("hover-info").innerHTML.replace((Totals.nitrateContribution[currentYear][tileId] * 100).toFixed(2) + "%" + "<br>", '');
+    document.getElementById("hover-info").innerHTML = document.getElementById("hover-info").innerHTML.replace(Number(boardData[currentBoard].map[tileId].results[currentYear].calculatedGrossErosionRate).toFixed(2) + " t/ac/yr" + "<br>", '');
+    document.getElementById("hover-info").innerHTML = document.getElementById("hover-info").innerHTML.replace((boardData[currentBoard].map[tileId].results[currentYear].phosphorusDelivered / boardData[currentBoard].map[tileId].area).toFixed(2) + " lb/ac/yr" + "<br>", '');
+    document.getElementById("hover-info").innerHTML = document.getElementById("hover-info").innerHTML.replace(Number(boardData[currentBoard].map[tileId].getCornGrainYield()/15.92857142857).toFixed(1) + " Mg/ha/yr" + "<br>", '');
+    document.getElementById("hover-info").innerHTML = document.getElementById("hover-info").innerHTML.replace(Number(boardData[currentBoard].map[tileId].getSoybeanYield()/14.87414187643).toFixed(2) + " Mg/ha/yr" + "<br>", '');
+    document.getElementById("hover-info").innerHTML = document.getElementById("hover-info").innerHTML.replace(Number(boardData[currentBoard].map[tileId].getMixedFruitsVegetablesYield()/0.060801144492).toFixed(2) + " Mg/ha/yr" + "<br>", '');
+    document.getElementById("hover-info").innerHTML = document.getElementById("hover-info").innerHTML.replace(Number(boardData[currentBoard].map[tileId].getCattleSupported(-1)).toFixed(1) + " animals/acre/yr" + "<br>", '');
+    document.getElementById("hover-info").innerHTML = document.getElementById("hover-info").innerHTML.replace(Number(boardData[currentBoard].map[tileId].getHayYield()/0.446808510638).toFixed(1) + " Mg/ha/yr" + "<br>", '');
+    document.getElementById("hover-info").innerHTML = document.getElementById("hover-info").innerHTML.replace(Number(boardData[currentBoard].map[tileId].getSwitchgrassYield()/0.445407279029).toFixed(2) + " Mg/ha/yr" + "<br>", '');
+    document.getElementById("hover-info").innerHTML = document.getElementById("hover-info").innerHTML.replace(Number(boardData[currentBoard].map[tileId].getWoodYield()/171.875).toFixed(2) + " m3/ha/yr" + "<br>", '');
+    document.getElementById("hover-info").innerHTML = document.getElementById("hover-info").innerHTML.replace("608.6 tons/acre/yr" + "<br>", '');
+  }
+  if(document.getElementById('parameters').innerHTML.includes('hover5'))
+  {
+    document.getElementById("hover-info").innerHTML = document.getElementById("hover-info").innerHTML.replace("Subwatershed " + boardData[currentBoard].map[tileId].subwatershed + "<br>", '');
+  }
+  if(document.getElementById('parameters').innerHTML.includes('hover6'))
+  {
+    document.getElementById("hover-info").innerHTML = document.getElementById("hover-info").innerHTML.replace("None" + "<br>", '');
+    document.getElementById("hover-info").innerHTML = document.getElementById("hover-info").innerHTML.replace("Rare" + "<br>", '');
+    document.getElementById("hover-info").innerHTML = document.getElementById("hover-info").innerHTML.replace("Occasionally" + "<br>", '');
+    document.getElementById("hover-info").innerHTML = document.getElementById("hover-info").innerHTML.replace("Frequently" + "<br>", '');
+    document.getElementById("hover-info").innerHTML = document.getElementById("hover-info").innerHTML.replace("Ponded" + "<br>", '');
+  }
+  if(document.getElementById('parameters').innerHTML.includes('hover7'))
+  {
+    document.getElementById("hover-info").innerHTML = document.getElementById("hover-info").innerHTML.replace("Very Poor" + "<br>", '');
+    document.getElementById("hover-info").innerHTML = document.getElementById("hover-info").innerHTML.replace("Poor" + "<br>", '');
+    document.getElementById("hover-info").innerHTML = document.getElementById("hover-info").innerHTML.replace("Somewhat Poor" + "<br>", '');
+    document.getElementById("hover-info").innerHTML = document.getElementById("hover-info").innerHTML.replace("Moderate / Well" + "<br>", '');
+    document.getElementById("hover-info").innerHTML = document.getElementById("hover-info").innerHTML.replace("Excessive" + "<br>", '');
+  }
+  if(document.getElementById('parameters').innerHTML.includes('hover8'))
+  {
+    document.getElementById("hover-info").innerHTML = document.getElementById("hover-info").innerHTML.replace("Strategic Wetland" + "<br>", '');
+    document.getElementById("hover-info").innerHTML = document.getElementById("hover-info").innerHTML.replace("Non-Strategic Wetland", '');
+  }
+  return highlightString;
+}
 //contaminatedRiver changes the color of the river dependent on current phosphorus level
 function contaminatedRiver(riverColor) {
 
@@ -2534,41 +2726,21 @@ function writeFileToDownloadString(mapPlayerNumber) {
   //  when the year 1 land use is equal to that player's number
 
   var string = "";
-  console.log(boardData[currentBoard]);
   if (typeof boardData[currentBoard] !== 'undefined') {
 
     string = "ID,Row,Column,Area,BaseLandUseType,CarbonMax,CarbonMin,Cattle,CornYield,DrainageClass,Erosion,FloodFrequency,Group,NitratesPPM,PIndex,Sediment,SoilType,SoybeanYield,StreamNetwork,Subwatershed,Timber,Topography,WatershedNitrogenContribution,StrategicWetland,riverStreams,LandTypeYear1,LandTypeYear2,LandTypeYear3,PrecipYear0,PrecipYear1,PrecipYear2,PrecipYear3" + "\n";
 
     for (var i = 0; i < boardData[currentBoard].map.length; i++) {
-
-      //If the tile really shouldn't be there (-1 for BaseLandUseType)...
-      // If the user made a multipler map, and a tile still has values when it's not that player's tile
-      if(boardData[currentBoard].map[i].landType[1] != mapPlayerNumber) {
-        boardData[currentBoard].map[i].carbonMax = "NA";
-        boardData[currentBoard].map[i].carbonMin = "NA";
-        boardData[currentBoard].map[i].cattle = "NA";
-        boardData[currentBoard].map[i].cornYield  = "NA";
-        boardData[currentBoard].map[i].drainageClass = "NA";
-        boardData[currentBoard].map[i].erosion = "NA";
-        boardData[currentBoard].map[i].floodFrequency = "NA";
-        boardData[currentBoard].map[i].group = "NA";
-        boardData[currentBoard].map[i].nitratesPPM = "NA";
-        boardData[currentBoard].map[i].pIndex = "NA"; 
-        boardData[currentBoard].map[i].sediment = "NA";
-        boardData[currentBoard].map[i].soilType = 0;
-        boardData[currentBoard].map[i].soybeanYield = "NA"; 
-        boardData[currentBoard].map[i].streamNetwork = "NA";
-        boardData[currentBoard].map[i].timber = "NA";
-        boardData[currentBoard].map[i].topography = 0; 
-        boardData[currentBoard].map[i].watershedNitrogenContribution = "NA"; 
-        boardData[currentBoard].map[i].strategicWetland = "NA";
-        //boardData[currentBoard].map[i].riverStreams = 0; 
-      } 
-
+      if(boardData[currentBoard].map[i].landType[1] != mapPlayerNumber && multiplayerAssigningModeOn) {
+        string = string + boardData[currentBoard].map[i].id + "," +
+        boardData[currentBoard].map[i].row + "," +
+        boardData[currentBoard].map[i].column + "," +
+        "0" + ",";
+      } else {
       string = string + boardData[currentBoard].map[i].id + "," +
         boardData[currentBoard].map[i].row + "," +
         boardData[currentBoard].map[i].column + "," +
-        boardData[currentBoard].map[i].area + ",";
+        boardData[currentBoard].map[i].area + ","; }
 
       if (mapPlayerNumber > 0) {
         if (boardData[currentBoard].map[i].landType[0] == 0) string += "0,";
@@ -2577,6 +2749,30 @@ function writeFileToDownloadString(mapPlayerNumber) {
         string += boardData[currentBoard].map[i].baseLandUseType + ",";
       }
 
+      //If the tile really shouldn't be there (-1 for BaseLandUseType)...
+      // If the user made a multipler map, and a tile still has values when it's not that player's tile
+      if(boardData[currentBoard].map[i].landType[1] != mapPlayerNumber && multiplayerAssigningModeOn) {
+      string += "NA" + "," +
+        "NA" + "," +
+        "NA" + "," +
+        "NA" + "," +
+        "NA" + "," +
+        "NA" + "," +
+        "NA" + "," +
+        "NA" + "," +
+        "NA" + "," +
+        "NA" + "," +
+        "NA" + "," +
+        "0" + "," +
+        "NA" + "," +
+        "NA" + "," +
+        "0" + "," +
+        "NA" + "," +
+        boardData[currentBoard].map[i].topography + "," +
+        "NA" + "," +
+        "NA" + "," +
+        boardData[currentBoard].map[i].riverStreams + ",";
+      } else {
       string += boardData[currentBoard].map[i].carbonMax + "," +
         boardData[currentBoard].map[i].carbonMin + "," +
         boardData[currentBoard].map[i].cattle + "," +
@@ -2596,7 +2792,7 @@ function writeFileToDownloadString(mapPlayerNumber) {
         boardData[currentBoard].map[i].topography + "," +
         boardData[currentBoard].map[i].watershedNitrogenContribution + "," +
         boardData[currentBoard].map[i].strategicWetland + "," +
-        boardData[currentBoard].map[i].riverStreams + ",";
+        boardData[currentBoard].map[i].riverStreams + ","; }
 
       if (mapPlayerNumber > 0) {
         string += ((boardData[currentBoard].map[i].landType[1] == mapPlayerNumber) ? "1," : "0,") + //year1
@@ -2646,13 +2842,10 @@ files = e.target.files;
     {
       if(files[0].name.match(/\.json/))//. json is file format from pewi2.1
       {
-        //This piece of code converts files from pewi2.1 to fileformat of pewi 3.0 
+        //This piece of code converts files from pewi2.1 to fileformat of pewi 3.0
 
         var reader = new FileReader();
         reader.readAsText(files[0]);
-
-
-      
 
         var string = "";
 
@@ -2742,7 +2935,7 @@ files = e.target.files;
           console.log("got the json obj %s",string);
           initWorkspace("./data.csv");//to fix the unusual loading of the river
           setupBoardFromUpload(string);
-          if(year2Available)//If data for years is included, add the year 
+          if(year2Available)//If data for years is included, add the year
           {
           addYearAndTransition();
           }
@@ -2780,7 +2973,6 @@ files = e.target.files;
   //console.log("Else entered");
     var reader = new FileReader();
     reader.readAsText(files[0]);
-   
       reader.onload = function(e) {
 
 
@@ -2789,7 +2981,7 @@ files = e.target.files;
         //Code to check if data multiple years are present in the file
           var allText=reader.result;
 
-              
+
           //converting the csv into an array
             var allTextLines = allText.split(/\r\n|\n/);
             var headers = allTextLines[0].split(',');
@@ -2807,40 +2999,40 @@ files = e.target.files;
                   }
             }
             var multipleYearFlag=1;
-           
-          
+
+
           for(var i=0;i<lines.length;i++)//This for loop iterates through the uploaded csv data file and cheks if year 2 and 3 are present in the file
             {
 
 
               if((lines[i][26] != lines[i][27]))
-              { 
+              {
                 if(lines[i][26]!=1 && lines[i][26]!=0)
                   multipleYearFlag=2;
                 if(lines[i][27]!=1 && lines[i][27]!=0)
                   multipleYearFlag=3;
 
-                
+
                 break;
               }
-            
-              
+
+
 
             }
 
             if(multipleYearFlag==2)
             {
-              
+
               addingYearFromFile=true;
               addYearAndTransition();
-              
-            }                        
-            if(multipleYearFlag==3)              
+
+            }
+            if(multipleYearFlag==3)
             {
               addingYearFromFile=true;
               addYearAndTransition();
               addYearAndTransition();
-             
+
             }
             //updating the precip levels from the values in the uploaded file
             boardData[currentBoard].precipitation[0]=lines[1][28];
@@ -2854,7 +3046,7 @@ files = e.target.files;
             transitionToYear(1);//transition to year one
             switchYearTab(1);
 
-            
+
 
 
 
@@ -2866,7 +3058,6 @@ files = e.target.files;
         //clear initData
         initData = [];
     }//end onload
-
   } //end else
 
   closeUploadDownloadFrame();
@@ -3424,7 +3615,7 @@ function resetOptions() {
   toggleVisibility();
   // remove Esc key event listener
   document.removeEventListener('keyup', optionsEsc);
-
+  window.frames[4].document.removeEventListener('keyup', optionsEsc);
 } //end resetOptions
 
 //startOptions displays the options page
@@ -3437,6 +3628,7 @@ function startOptions() {
     document.getElementById('options').contentWindow.getCurrentOptionsState();
     // add Esc key event listener
     document.addEventListener('keyup', optionsEsc);
+    window.frames[4].document.addEventListener('keyup', optionsEsc);
   }
 } // end startOptions
 
@@ -3447,6 +3639,64 @@ function optionsEsc(e) {
     resetOptions();
   }
 }
+
+//Returns the hotkey array
+function giveHotkeys() {
+  return hotkeyArr;
+} //end giveHotkeys()
+
+//Resets the hotkey array to its default state
+function resetHotkeys() {
+  hotkeyArr = [[69,null],[82,null],[84,null],[85,null],[66,null],[86,null],[68,null],[65,null],[87,null],[83,null],[79,null],[81,null]];
+  updateKeys();
+} //end resetHotkeys()
+
+//Checks other hotkey bindings
+//
+//givenKey: Key they want to bind
+//givenFunc: The command for binding
+//givenSlot: Primary or Secondary hotkey binding
+
+function setHotkey(givenKey,givenFunc,givenSlot) {
+  //For each hotkey possible
+  givenKey = (givenKey.toUpperCase()).charCodeAt(0);
+  //Make sure it's an appropriate keycode character
+  if(!isNaN(givenKey) || givenKey < 10) {
+    for(var i = 0; i < hotkeyArr.length; i++) {
+      //For each assigned hotkey for that type (2 is maximum)
+      for(var j = 0; j < 2; j++) {
+        //If the given hotkey matches one of the existing ones, replace the old with null
+        if(hotkeyArr[i][j] == givenKey) {
+          hotkeyArr[i][j] = null;
+        }
+      }
+    }
+    //Set the new hotkey
+    if(hotkeyArr[givenFunc][0] != givenKey && givenSlot == 1 || givenSlot == 2 && hotkeyArr[givenFunc][0] == null) {
+      hotkeyArr[givenFunc][0] = givenKey;
+    } else {
+      hotkeyArr[givenFunc][1] = givenKey;
+    }
+    updateKeys();
+  }
+} //end setHotkey(givenKey, givenFunc, givenSlot)
+
+//Updates the visuals for the user
+function updateKeys() {
+  for(var i = 0; i < hotkeyArr.length; i++) {
+    for(var j = 0; j < 2; j++) {
+      var temp = j+1;
+      if(hotkeyArr[i][j]==null){
+        window.frames[4].document.getElementById("hki"+i+"e"+temp).value = "";
+        window.frames[4].document.getElementById("hki"+i+"e"+temp).placeholder = "N/A";
+      } else {
+        window.frames[4].document.getElementById("hki"+i+"e"+temp).value = "";
+        window.frames[4].document.getElementById("hki"+i+"e"+temp).placeholder = String.fromCharCode(hotkeyArr[i][j]);
+      }
+    }
+  }
+} //end updateKeys()
+
 
 //endMultiAssignMode displays the multiPlayer element
 function endMultiplayerAssignMode() {
@@ -3686,7 +3936,6 @@ function multiplayerExit() {
     totalPlayers--;
   }
   multiplayerAssigningModeOn = false;
-
 
 }
 
