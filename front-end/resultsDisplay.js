@@ -128,6 +128,7 @@ canvas.getContext('2d').fillText("Year "+ i,xCord+67,315);
   var precipSvg = document.getElementById('precipChart');
   var precipSvgStringData = $(precipSvg).html();
   precipSvgStringData = "<svg>" + precipSvgStringData + "</svg>";
+  console.log("Precip chart: %s",precipSvgStringData);
   canvg(document.getElementById('canvasLU3'), precipSvgStringData);
   canvas.getContext('2d').drawImage(document.getElementById('canvasLU3'), 10, 10, 600, 600);
   //writing the precip chart on pdf
