@@ -137,7 +137,7 @@ canvas.getContext('2d').fillText("Year "+ i,xCord+67,339);
   precipSvgStringData = "<svg>" + precipSvgStringData + "</svg>";
   console.log("Precip chart: %s",precipSvgStringData);
   canvg(document.getElementById('canvasLU3'), precipSvgStringData);
-  canvas.getContext('2d').drawImage(document.getElementById('canvasLU3'), 220, 910, 700, 700);
+  canvas.getContext('2d').drawImage(document.getElementById('canvasLU3'), 220, 915, 700, 590);
 
   canvas.getContext('2d').font = "20px Arial";
   canvas.getContext('2d').fillText("Precipitiation",30,900);
@@ -150,22 +150,13 @@ canvas.getContext('2d').fillText("Year "+ i,xCord+67,339);
   k = k +32;
   }
 
-    
-
-
-    
   //writing the precip chart on pdf
-
-
   imgData = canvas.toDataURL("image/jpeg", 1.0);
   pdf.addImage(imgData, 'JPEG', 0, 0);
   //Saving the pdf
   pdf.save("pewiPrintableReport.pdf");
   parent.pdfGenerateModeOn = true;
   canvas.style = "display: none;";
-
-
-
 }
 
 //generateResultsTable creates the string of html with all the numerical results
