@@ -1036,10 +1036,10 @@ function drawPrecipitationInformationChart() {
   // var barHeight = 30;
   var width = Math.round(window.innerWidth * 0.3);
   var barHeight = Math.round(window.innerHeight * 0.045);
-  if(pdfGenerateModeOn)
+  if(pdfGenerateModeOn)//fixes width and height in the chart is being drawin for printing
   {
     width=700;
-    barHeight=42;
+    barHeight=47;
   }
   console.log("width : %s, height %s",width, barHeight);
   //create bar scale for percentages
